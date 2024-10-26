@@ -2,7 +2,7 @@
     <string name="app_name">FitCal</string>
 
     <string-array name="activity_level_options">
-        <item>Poco o ningún ejercicio</item>
+        <item>Poco o ningun ejercicio</item>
         <item>Ejercicio ligero</item>
         <item>Ejercicio moderado</item>
         <item>Ejercicio fuerte</item>

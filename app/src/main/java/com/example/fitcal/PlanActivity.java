@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -28,6 +29,7 @@ import com.example.fitcal.adapter.BreakfastAdapter;
 import com.example.fitcal.adapter.EjercicioAdapter;
 import com.example.fitcal.bean.Ejercicio;
 import com.example.fitcal.bean.Meal;
+import com.example.fitcal.bean.User;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.button.MaterialButton;
@@ -43,7 +45,7 @@ public class PlanActivity extends AppCompatActivity {
     private List<Meal> desayunoList, almuerzoList, cenaList;
 
     private float caloriasConsumidas = 0;
-    private float caloriasObjetivo;
+    private float caloriasObjetivo = 0.0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,9 +53,21 @@ public class PlanActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_plan);
 
-        ProgressBar progressBar = findViewById(R.id.progressBar);
-        TextView caloriesText = findViewById(R.id.calories_text);
 
+        User user = (User) getIntent().getSerializableExtra("user");
+        caloriasObjetivo = user.getGastoEnergia();
+        Log.d("PlanActivity"," "+caloriasObjetivo);
+        Log.d("Se llega a obtener el valor de tbm usuario ", " " + user.getGastoEnergia());
+        /*
+        String strCaloriasObjetivo = intent.getStringExtra("user");
+        if (strCaloriasObjetivo != null && !strCaloriasObjetivo.isEmpty()) {
+            caloriasObjetivo = Float.parseFloat(strCaloriasObjetivo);
+            Log.d("Recibio calorias",strCaloriasObjetivo);
+        } else {
+            Log.d("PlanActivity", "El valor de calorías recibido es nulo :c");
+        }
+
+         */
         //Manejo del botton_navbar
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -77,10 +91,6 @@ public class PlanActivity extends AppCompatActivity {
                 }
             }
         });
-
-
-
-        caloriasObjetivo = 2480;
 
 
         /*---------------------------*/
@@ -114,7 +124,7 @@ public class PlanActivity extends AppCompatActivity {
         recyclerEjercicio.setLayoutManager(new LinearLayoutManager(this));
         recyclerEjercicio.setAdapter(ejercicioAdapter);
 
-        // Botones para agregar alimentos
+        // Manejo de los botones
         Button btnAgregarAlimentoDesayuno = findViewById(R.id.btnAgregarAlimentoDesayuno);
         btnAgregarAlimentoDesayuno.setOnClickListener(v -> showBottomSheetDialog("desayuno",desayunoAdapter, desayunoList, caloriasObjetivo));
 
