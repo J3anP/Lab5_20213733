@@ -1,6 +1,9 @@
 package com.example.fitcal;
 
 import static android.Manifest.permission.POST_NOTIFICATIONS;
+
+import android.app.AlarmManager;
+import android.content.Context;
 import android.os.Handler;
 import android.app.Dialog;
 import android.app.Notification;
@@ -13,6 +16,7 @@ import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -49,6 +53,7 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Random;
 
@@ -65,6 +70,13 @@ public class PlanActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private Runnable notificationRunnable;
 
+    private static final String CHANNEL_ID = "meals_channel";
+    private boolean desayunoRegistrado = false;
+    private boolean almuerzoRegistrado = false;
+    private boolean cenaRegistrado = false;
+
+    private AlarmManager alarmManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -72,6 +84,9 @@ public class PlanActivity extends AppCompatActivity {
         setContentView(R.layout.activity_plan);
 
         crearCanalesNotificacion();
+        crearCanalNotificaciones(); //Este es para las comidas
+        configurarNotificacionesComidas();
+
 
         User user = (User) getIntent().getSerializableExtra("user");
         caloriasObjetivo = user.getGastoEnergia();
@@ -345,11 +360,14 @@ public class PlanActivity extends AppCompatActivity {
 
     }
 
+    //Notificacion personalizada
+
     public void notificarMensajeAnimo(){
         String[] frases = {
-                "¿Qué pasa soldado, ¿Acaso se va a rendir?",
+                "¿Qué pasa soldado, acaso se va a rendir?",
                 "La fuerza lo es todo. El poder lo perdona todo, incluso el pasado.",
-                "Cuando conoces tu valor, nadie puede hacerte sentir menos."
+                "Cuando conoces tu valor, nadie puede hacerte sentir menos.",
+                "Los límites solo están en tu mente. Si lo crees posible, puedes superarlos."
         };
 
         Random random = new Random();
@@ -380,11 +398,152 @@ public class PlanActivity extends AppCompatActivity {
 
     }
 
-    //Notificacion personalizada
     @Override
     protected void onDestroy() {
         super.onDestroy();
         handler.removeCallbacks(notificationRunnable);
+    }
+
+    //Alarmas para las comidas
+    private void crearCanalNotificaciones() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID, "Meal Notifications", NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setDescription("Notificaciones de recordatorio para registrar comidas");
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+    }
+
+    private void configurarNotificacionesComidas() {
+        programarNotificacionDesayuno();
+        programarNotificacionAlmuerzo();
+        programarNotificacionCena();
+        programarNotificacionMedianoche();
+    }
+
+    private void programarNotificacionDesayuno() {
+        Calendar desayunoInicio = Calendar.getInstance();
+        desayunoInicio.set(Calendar.HOUR_OF_DAY, 6);
+        desayunoInicio.set(Calendar.MINUTE, 0);
+        desayunoInicio.set(Calendar.SECOND, 0);
+
+        Calendar desayunoFin = Calendar.getInstance();
+        desayunoFin.set(Calendar.HOUR_OF_DAY, 8);
+        desayunoFin.set(Calendar.MINUTE, 0);
+        desayunoFin.set(Calendar.SECOND, 0);
+
+        long delayInicial = desayunoInicio.getTimeInMillis() - System.currentTimeMillis();
+        long intervaloRepeticion = 5*60*1000;
+
+        if (delayInicial < 0) {
+            delayInicial += 24*60*60*1000; // dia siguiente
+        }
+
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!desayunoRegistrado && Calendar.getInstance().before(desayunoFin)) {
+                    enviarNotificacion("Registro de desayuno", "Recuerde registrar su desayuno");
+                    handler.postDelayed(this, intervaloRepeticion);
+                }
+            }
+        }, delayInicial);
+    }
+
+    private void programarNotificacionAlmuerzo() {
+        Calendar almuerzoInicio = Calendar.getInstance();
+        almuerzoInicio.set(Calendar.HOUR_OF_DAY, 13);
+        almuerzoInicio.set(Calendar.MINUTE, 0);
+        almuerzoInicio.set(Calendar.SECOND, 0);
+
+        Calendar almuerzoFin = Calendar.getInstance();
+        almuerzoFin.set(Calendar.HOUR_OF_DAY, 15);
+        almuerzoFin.set(Calendar.MINUTE, 0);
+        almuerzoFin.set(Calendar.SECOND, 0);
+
+        long delayInicial = almuerzoInicio.getTimeInMillis() - System.currentTimeMillis();
+        long intervaloRepeticion = 5*60*1000;
+
+        if (delayInicial < 0) {
+            delayInicial += 24*60*60*1000; // dia siguiente
+        }
+
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!almuerzoRegistrado && Calendar.getInstance().before(almuerzoFin)) {
+                    enviarNotificacion("Registro de almuerzo", "Recuerde registrar su almuerzo");
+                    handler.postDelayed(this, intervaloRepeticion);
+                }
+            }
+        }, delayInicial);
+    }
+
+    private void programarNotificacionCena() {
+        Calendar cenaInicio = Calendar.getInstance();
+        cenaInicio.set(Calendar.HOUR_OF_DAY, 18);
+        cenaInicio.set(Calendar.MINUTE, 0);
+        cenaInicio.set(Calendar.SECOND, 0);
+
+        Calendar cenaFin = Calendar.getInstance();
+        cenaFin.set(Calendar.HOUR_OF_DAY, 20);
+        cenaFin.set(Calendar.MINUTE, 0);
+        cenaFin.set(Calendar.SECOND, 0);
+
+        long delayInicial = cenaInicio.getTimeInMillis() - System.currentTimeMillis();
+        long intervaloRepeticion = 5*60*1000;
+
+        if (delayInicial < 0) {
+            delayInicial += 24*60*60*1000; // dia siguiente
+        }
+
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!cenaRegistrado && Calendar.getInstance().before(cenaFin)) {
+                    enviarNotificacion("Registro de cena", "Recuerde registrar su cena");
+                    handler.postDelayed(this, intervaloRepeticion);
+                }
+            }
+        }, delayInicial);
+    }
+
+    private void programarNotificacionMedianoche() {
+        Calendar medianoche = Calendar.getInstance();
+        medianoche.set(Calendar.HOUR_OF_DAY, 23);
+        medianoche.set(Calendar.MINUTE, 59);
+        medianoche.set(Calendar.SECOND, 0);
+
+        long delayInicial = medianoche.getTimeInMillis() - System.currentTimeMillis();
+        if (delayInicial < 0) {
+            delayInicial += 24*60*60*1000;
+        }
+
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!desayunoRegistrado || !almuerzoRegistrado || !cenaRegistrado) {
+                    enviarNotificacion("Sin registro de comida", "No se ha registrado ningún alimento hoy");
+                }
+                // Vuelve a configurar para el siguiente día
+                handler.postDelayed(this, 24 * 60 * 60 * 1000);
+            }
+        }, delayInicial);
+    }
+
+    private void enviarNotificacion(String titulo, String mensaje) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_bell)
+                .setContentTitle(titulo)
+                .setContentText(mensaje)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            notificationManager.notify((int) System.currentTimeMillis(), builder.build());
+        }
     }
 
 
