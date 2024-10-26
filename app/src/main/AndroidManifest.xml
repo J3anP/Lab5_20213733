@@ -15,6 +15,9 @@
         android:theme="@style/Theme.FitCal"
         tools:targetApi="31">
         <activity
+            android:name=".CatalogoActivity"
+            android:exported="false" />
+        <activity
             android:name=".PlanActivity"
             android:exported="false" />
         <activity
