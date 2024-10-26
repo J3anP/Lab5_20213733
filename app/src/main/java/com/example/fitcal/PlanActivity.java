@@ -4,6 +4,7 @@ import static android.Manifest.permission.POST_NOTIFICATIONS;
 
 import android.app.AlarmManager;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.os.Handler;
 import android.app.Dialog;
 import android.app.Notification;
@@ -63,7 +64,7 @@ public class PlanActivity extends AppCompatActivity {
     private List<Ejercicio> ejercicioList;
     private List<Meal> desayunoList, almuerzoList, cenaList;
 
-    private float caloriasConsumidas = 0;
+    private float caloriasConsumidas = 0.0f;
     private float caloriasObjetivo = 0.0f;
 
     String canal1 = "importanteDefault";
@@ -75,7 +76,6 @@ public class PlanActivity extends AppCompatActivity {
     private boolean almuerzoRegistrado = false;
     private boolean cenaRegistrado = false;
 
-    private AlarmManager alarmManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +86,26 @@ public class PlanActivity extends AppCompatActivity {
         crearCanalesNotificacion();
         crearCanalNotificaciones(); //Este es para las comidas
         configurarNotificacionesComidas();
+
+        //Día de la semana
+        Calendar calendar = Calendar.getInstance();
+        int diaSemana = calendar.get(Calendar.DAY_OF_WEEK);
+
+        if (diaSemana == Calendar.MONDAY) {
+            findViewById(R.id.lunes).setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.orange_good)));
+        } else if (diaSemana == Calendar.TUESDAY) {
+            findViewById(R.id.martes).setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.orange_good)));
+        } else if (diaSemana == Calendar.WEDNESDAY) {
+            findViewById(R.id.miercoles).setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.orange_good)));
+        } else if (diaSemana == Calendar.THURSDAY) {
+            findViewById(R.id.jueves).setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.orange_good)));
+        } else if (diaSemana == Calendar.FRIDAY) {
+            findViewById(R.id.viernes).setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.orange_good)));
+        } else if (diaSemana == Calendar.SATURDAY) {
+            findViewById(R.id.sabado).setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.orange_good)));
+        } else if (diaSemana == Calendar.SUNDAY) {
+            findViewById(R.id.domingo).setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.orange_good)));
+        }
 
 
         User user = (User) getIntent().getSerializableExtra("user");
@@ -104,6 +124,7 @@ public class PlanActivity extends AppCompatActivity {
          */
         //Manejo del botton_navbar
 
+        //Este navigation no se está empleando, porque cambie de idea
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
 
         bottomNavigationView.setSelectedItemId(R.id.principal);
@@ -526,8 +547,8 @@ public class PlanActivity extends AppCompatActivity {
                 if (!desayunoRegistrado || !almuerzoRegistrado || !cenaRegistrado) {
                     enviarNotificacion("Sin registro de comida", "No se ha registrado ningún alimento hoy");
                 }
-                // Vuelve a configurar para el siguiente día
-                handler.postDelayed(this, 24 * 60 * 60 * 1000);
+                // dia siguiente
+                handler.postDelayed(this, 24*60*60*1000);
             }
         }, delayInicial);
     }
