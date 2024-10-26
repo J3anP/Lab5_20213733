@@ -1,9 +1,17 @@
 package com.example.fitcal;
 
+import static android.Manifest.permission.POST_NOTIFICATIONS;
+import android.os.Handler;
 import android.app.Dialog;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -19,13 +27,18 @@ import android.widget.TextView;
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.example.fitcal.adapter.BreakfastAdapter;
+import com.example.fitcal.adapter.CarouselAdapter;
 import com.example.fitcal.adapter.EjercicioAdapter;
 import com.example.fitcal.bean.Ejercicio;
 import com.example.fitcal.bean.Meal;
@@ -37,6 +50,7 @@ import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class PlanActivity extends AppCompatActivity {
     private BreakfastAdapter desayunoAdapter, almuerzoAdapter, cenaAdapter;
@@ -47,12 +61,17 @@ public class PlanActivity extends AppCompatActivity {
     private float caloriasConsumidas = 0;
     private float caloriasObjetivo = 0.0f;
 
+    String canal1 = "importanteDefault";
+    private Handler handler = new Handler();
+    private Runnable notificationRunnable;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_plan);
 
+        crearCanalesNotificacion();
 
         User user = (User) getIntent().getSerializableExtra("user");
         caloriasObjetivo = user.getGastoEnergia();
@@ -139,6 +158,23 @@ public class PlanActivity extends AppCompatActivity {
 
         MaterialButton btnNotify = findViewById(R.id.bt_notification);
         btnNotify.setOnClickListener(v -> showBottomSheetDialogNotify());
+
+
+        ViewPager2 viewPager = findViewById(R.id.viewPager);
+
+        String[] names = {"Comida A", "Desayuno B", "Almuerzo A", "Almuerzo B", "Cena A"};
+        String[] calories = {"Calorías: 100 kcal", "Calorías: 200 kcal", "Calorías: 200 kcal", "Calorías: 200 kcal", "Calorías: 200 kcal"};
+        String[] descriptions = {
+                "Esta es una breve descripción de la imagen.",
+                "Esta es una breve descripción de la imagen.",
+                "Esta es una breve descripción de la imagen.",
+                "Esta es una breve descripción de la imagen.",
+                "Esta es una breve descripción de la imagen."
+        };
+        int[] images = {R.drawable.img_1, R.drawable.img_2, R.drawable.img_3, R.drawable.img_4, R.drawable.img_5};
+
+        CarouselAdapter carAdapter = new CarouselAdapter(names, calories, descriptions, images);
+        viewPager.setAdapter(carAdapter);
     }
 
 
@@ -198,6 +234,10 @@ public class PlanActivity extends AppCompatActivity {
 
         int progreso = (int) ((caloriasConsumidas / caloriasObjetivo) * 100);
 
+        if(progreso>100){
+            notificarCaloriaSuperada();
+        }
+
         caloriesText.setText(caloriasConsumidas + " / " + caloriasObjetivo + " kcal");
         progressBar.setProgress(progreso);
     }
@@ -238,6 +278,14 @@ public class PlanActivity extends AppCompatActivity {
         btnAgregar.setOnClickListener(v -> {
             String strTiempo = txtTiempo.getText().toString();
 
+            notificationRunnable = new Runnable() {
+                @Override
+                public void run() {
+                    notificarMensajeAnimo();
+                    handler.postDelayed(this, Integer.parseInt(strTiempo)*60*1000);
+                }
+            };
+            handler.post(notificationRunnable);
             dialog.dismiss();
         });
 
@@ -245,6 +293,98 @@ public class PlanActivity extends AppCompatActivity {
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.WRAP_CONTENT);
         dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.WHITE));
         dialog.getWindow().setGravity(Gravity.BOTTOM);
+    }
+
+
+    public void crearCanalesNotificacion() {
+
+        NotificationChannel channel = new NotificationChannel(canal1,
+                "Canal notificaciones default",
+                NotificationManager.IMPORTANCE_DEFAULT);
+        channel.setDescription("Canal para notificaciones con prioridad default");
+        channel.enableVibration(true);
+
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        notificationManager.createNotificationChannel(channel);
+
+        pedirPermisos();
+    }
+
+    public void pedirPermisos() {
+        // TIRAMISU = 33
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ActivityCompat.checkSelfPermission(this, POST_NOTIFICATIONS) == PackageManager.PERMISSION_DENIED) {
+
+            ActivityCompat.requestPermissions(PlanActivity.this, new String[]{POST_NOTIFICATIONS}, 101);
+        }
+    }
+
+    public void notificarCaloriaSuperada(){
+
+        //Crear notificación
+        //Agregar información a la notificación que luego sea enviada a la actividad que se abre
+        Intent intent = new Intent(this, PlanActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        //
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canal1)
+                .setSmallIcon(R.drawable.ic_bell)
+                .setContentTitle("Fitcal")
+                .setContentText("Ha superado las calorías que puede consumir por hoy")
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        Notification notification = builder.build();
+
+        //Lanzar notificación
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+        if (ActivityCompat.checkSelfPermission(this, POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            notificationManager.notify(281, notification);
+        }
+
+    }
+
+    public void notificarMensajeAnimo(){
+        String[] frases = {
+                "¿Qué pasa soldado, ¿Acaso se va a rendir?",
+                "La fuerza lo es todo. El poder lo perdona todo, incluso el pasado.",
+                "Cuando conoces tu valor, nadie puede hacerte sentir menos."
+        };
+
+        Random random = new Random();
+        int i = random.nextInt(frases.length);
+
+
+        //Crear notificación
+        //Agregar información a la notificación que luego sea enviada a la actividad que se abre
+        Intent intent = new Intent(this, PlanActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        //
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, canal1)
+                .setSmallIcon(R.drawable.ic_bell)
+                .setContentTitle("Fitcal")
+                .setContentText(frases[i])
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        Notification notification = builder.build();
+
+        //Lanzar notificación
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
+
+        if (ActivityCompat.checkSelfPermission(this, POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            notificationManager.notify(282, notification);
+        }
+
+    }
+
+    //Notificacion personalizada
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(notificationRunnable);
     }
 
 
