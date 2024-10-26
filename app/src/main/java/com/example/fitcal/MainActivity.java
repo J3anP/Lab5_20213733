@@ -1,5 +1,6 @@
 package com.example.fitcal;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
@@ -9,6 +10,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.google.android.material.button.MaterialButton;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,5 +43,15 @@ public class MainActivity extends AppCompatActivity {
         );
         goalAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         goalSpinner.setAdapter(goalAdapter);
+
+
+        //Siguiente vista
+        MaterialButton btNext = findViewById(R.id.bt_next);
+        btNext.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, PlanActivity.class);
+            startActivity(intent);
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        });
+
     }
 }
